@@ -42,6 +42,11 @@ plugins: { entries: { "call-handoff": { enabled: true, config: {
 } } } }
 ```
 
+**Restart the gateway after installing or changing this plugin's config.** Its
+secret references (Twilio and gateway tokens) are resolved at gateway start; a
+hot reload re-registers the plugin without them and it switches itself off
+(`[call-handoff] disabled: twilio.authToken is required`).
+
 voice-call's `realtime.toolPolicy` must let consults use the tool (`owner`),
 and its `realtime.instructions` should say when to ask for a person.
 
