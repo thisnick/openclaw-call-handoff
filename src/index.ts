@@ -2,7 +2,7 @@ import { Type } from "typebox";
 import { ErrorCodes, errorShape } from "openclaw/plugin-sdk/gateway-runtime";
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { jsonResult } from "openclaw/plugin-sdk/tool-results";
-import { parseConfig } from "./config.js";
+import { isVoiceSession, parseConfig, voiceCallProblems } from "./config.js";
 import { HandoffController } from "./handoff.js";
 import { TwilioClient } from "./twilio.js";
 import { createVoiceCallApi } from "./voice-call.js";
@@ -14,9 +14,14 @@ export default definePluginEntry({
   name: "Call Hand-off",
   description: "Hand a live voice call over to a configured human.",
   register(api) {
-    const voiceCallConfig = (api.config?.plugins?.entries?.["voice-call"]?.config ?? undefined) as
-      | Record<string, unknown>
-      | undefined;
+    const voiceCallEntry = api.config?.plugins?.entries?.["voice-call"];
+    const voiceCallConfig = (voiceCallEntry?.config ?? undefined) as Record<string, unknown> | undefined;
+    // Without a usable voice-call there is nothing to hand off: offer no tool at all.
+    const problems = voiceCallProblems(voiceCallEntry);
+    if (problems.length > 0) {
+      api.logger.warn(`[call-handoff] disabled: ${problems.join("; ")}`);
+      return;
+    }
     const { config, errors } = parseConfig(api.pluginConfig, voiceCallConfig);
     if (!config) {
       api.logger.warn(`[call-handoff] disabled: ${errors.join("; ")}`);
@@ -49,7 +54,7 @@ export default definePluginEntry({
         callId: typeof params.callId === "string" ? params.callId : undefined,
       });
 
-    api.registerTool({
+    const tool = {
       name: TOOL_NAME,
       label: "Transfer call to a human",
       description:
@@ -65,10 +70,14 @@ export default definePluginEntry({
           Type.String({ description: "voice-call callId; only needed when several calls are live." }),
         ),
       }),
-      async execute(_toolCallId, params) {
+      async execute(_toolCallId: string, params: unknown) {
         return jsonResult(await start((params ?? {}) as Record<string, unknown>));
       },
-    });
+    };
+    // Voice-call consults run in agent:<id>:voice:* sessions; elsewhere there is no call to hand off.
+    api.registerTool((ctx) =>
+      config.toolVisibility === "always" || isVoiceSession(ctx.sessionKey) ? tool : null,
+    );
 
     // Same entry point for operators and live tests: gateway call callhandoff.start.
     api.registerGatewayMethod(

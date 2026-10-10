@@ -138,7 +138,17 @@
         "type": "integer",
         "minimum": 250,
         "maximum": 5000
+      },
+      "toolVisibility": {
+        "type": "string",
+        "enum": [
+          "voice-sessions",
+          "always"
+        ]
       }
     }
-  }
+  },
+  "requiresPlugins": [
+    "voice-call"
+  ]
 }

@@ -48,7 +48,12 @@ and its `realtime.instructions` should say when to ask for a person.
 Options: `ringTimeoutSec` (25), `machineDetection` (true),
 `calleeAnnouncement` ("{humanName} is joining now."), `humanPrompt`
 ("Call from {callee} about: {reason}. Connecting you now."),
-`maxAttemptsPerCall` (2), `pollIntervalMs` (1000).
+`maxAttemptsPerCall` (2), `pollIntervalMs` (1000), `toolVisibility`
+(`voice-sessions`: the tool appears only in voice-call consults; `always`).
+
+The plugin declares `requiresPlugins: ["voice-call"]` and stays inactive (with
+one log line saying why) unless voice-call is enabled with `provider: "twilio"`,
+`realtime.enabled: true` and `realtime.toolPolicy: "owner"`.
 
 ## Requirements
 

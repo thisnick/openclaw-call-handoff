@@ -21,7 +21,37 @@ export type CallHandoffConfig = {
   humanPrompt: string;
   maxAttemptsPerCall: number;
   pollIntervalMs: number;
+  /** "voice-sessions": offer the tool only in voice-call consult sessions. */
+  toolVisibility: "voice-sessions" | "always";
 };
+
+/** voice-call consults run in agent:<id>:voice:* sessions (per-phone and per-call scopes). */
+export function isVoiceSession(sessionKey: string | undefined): boolean {
+  return /^agent:[^:]+:voice:/i.test(sessionKey ?? "");
+}
+
+/** Why the stock voice-call plugin can't host a hand-off, or [] when it can. */
+export function voiceCallProblems(entry: unknown): string[] {
+  const e = (entry && typeof entry === "object" ? entry : undefined) as
+    | { enabled?: unknown; config?: Record<string, unknown> }
+    | undefined;
+  if (!e) return ["the voice-call plugin is not configured (plugins.entries.voice-call)"];
+  if (e.enabled === false) return ["the voice-call plugin is disabled"];
+  const c = e.config ?? {};
+  const problems: string[] = [];
+  if (c.enabled === false) problems.push("voice-call config.enabled is false");
+  if (c.provider !== "twilio") problems.push('voice-call provider must be "twilio"');
+  const realtime = (c.realtime ?? {}) as Record<string, unknown>;
+  if (realtime.enabled !== true) problems.push("voice-call realtime.enabled must be true");
+  // voice-call defaults toolPolicy to "safe-read-only", which hides plugin tools from consults.
+  const toolPolicy = typeof realtime.toolPolicy === "string" ? realtime.toolPolicy : "safe-read-only";
+  if (toolPolicy !== "owner") {
+    problems.push(
+      `voice-call realtime.toolPolicy is "${toolPolicy}"; consults need "owner" to use transfer_call_to_human`,
+    );
+  }
+  return problems;
+}
 
 const E164 = /^\+[1-9]\d{1,14}$/;
 const HUMAN_ID = /^[a-z][a-z0-9_-]{0,31}$/;
@@ -97,6 +127,7 @@ export function parseConfig(
         str(input.humanPrompt) ?? "Call from {callee} about: {reason}. Connecting you now.",
       maxAttemptsPerCall: num(input.maxAttemptsPerCall, 2, 1, 5),
       pollIntervalMs: num(input.pollIntervalMs, 1000, 250, 5000),
+      toolVisibility: input.toolVisibility === "always" ? "always" : "voice-sessions",
     },
   };
 }

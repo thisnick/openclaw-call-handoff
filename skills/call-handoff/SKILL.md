@@ -21,6 +21,8 @@ decision needs that person.
 - `reason`: one short sentence the person hears first, e.g. "Bella Napoli only
   has 8:15 on Friday and wants to confirm."
 - `human`: id of a configured person; omit it for the default.
+- The tool only appears during voice-call consults (`toolVisibility: "always"`
+  shows it everywhere).
 - The tool returns at once. Their phone rings; if they answer, they are
   connected and the voice agent leaves the call. If they don't, the voice agent
   gets a notice and should offer to take a message.

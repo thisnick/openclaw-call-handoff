@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseConfig } from "./config.js";
+import { isVoiceSession, parseConfig, voiceCallProblems } from "./config.js";
 import { HandoffController, phoneForSpeech } from "./handoff.js";
 import type { TwilioCall } from "./twilio.js";
 import type { VoiceCallApi, VoiceCallStatus } from "./voice-call.js";
@@ -264,5 +264,39 @@ describe("config", () => {
 describe("phoneForSpeech", () => {
   it("reads US numbers in groups", () => {
     expect(phoneForSpeech("+15551234567")).toBe("5 5 5, 1 2 3, 4 5 6 7");
+  });
+});
+
+describe("voice-call readiness", () => {
+  const ready = {
+    enabled: true,
+    config: { provider: "twilio", realtime: { enabled: true, toolPolicy: "owner" } },
+  };
+
+  it("accepts a realtime Twilio voice-call with owner consults", () => {
+    expect(voiceCallProblems(ready)).toEqual([]);
+  });
+
+  it("explains each reason the hand-off cannot work", () => {
+    expect(voiceCallProblems(undefined)).toEqual([expect.stringContaining("not configured")]);
+    expect(voiceCallProblems({ ...ready, enabled: false })).toEqual(["the voice-call plugin is disabled"]);
+    expect(voiceCallProblems({ config: { provider: "telnyx", realtime: { enabled: false } } })).toEqual([
+      'voice-call provider must be "twilio"',
+      "voice-call realtime.enabled must be true",
+      expect.stringContaining('toolPolicy is "safe-read-only"'),
+    ]);
+    expect(
+      voiceCallProblems({ config: { provider: "twilio", realtime: { enabled: true, toolPolicy: "safe-read-only" } } }),
+    ).toEqual([expect.stringContaining('consults need "owner"')]);
+  });
+});
+
+describe("isVoiceSession", () => {
+  it("matches voice-call consult sessions only", () => {
+    expect(isVoiceSession("agent:main:voice:+15551234567")).toBe(true);
+    expect(isVoiceSession("agent:main:voice:call:abc")).toBe(true);
+    expect(isVoiceSession("agent:main:whatsapp:direct:+15551234567")).toBe(false);
+    expect(isVoiceSession("agent:main:main")).toBe(false);
+    expect(isVoiceSession(undefined)).toBe(false);
   });
 });
