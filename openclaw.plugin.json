@@ -1,0 +1,144 @@
+{
+  "id": "call-handoff",
+  "name": "Call Hand-off",
+  "description": "Hand a live voice call over to a configured human.",
+  "version": "0.1.0",
+  "activation": {
+    "onStartup": true
+  },
+  "skills": [
+    "skills/call-handoff"
+  ],
+  "contracts": {
+    "tools": [
+      "transfer_call_to_human"
+    ]
+  },
+  "configContracts": {
+    "secretInputs": {
+      "paths": [
+        {
+          "path": "twilio.authToken",
+          "expected": "string"
+        },
+        {
+          "path": "gateway.token",
+          "expected": "string"
+        }
+      ]
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "twilio": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accountSid": {
+            "type": "string"
+          },
+          "authToken": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object"
+              }
+            ]
+          },
+          "apiBaseUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "fromNumber": {
+        "type": "string",
+        "pattern": "^\\+[1-9]\\d{1,14}$"
+      },
+      "gateway": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "token": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object"
+              }
+            ]
+          }
+        }
+      },
+      "voiceWebhookUrl": {
+        "type": "string"
+      },
+      "voiceWebhookSignedUrl": {
+        "type": "string"
+      },
+      "humans": {
+        "type": "object",
+        "propertyNames": {
+          "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+        },
+        "additionalProperties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "number"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "number": {
+              "type": "string",
+              "pattern": "^\\+[1-9]\\d{1,14}$"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "defaultHuman": {
+        "type": "string"
+      },
+      "ringTimeoutSec": {
+        "type": "integer",
+        "minimum": 10,
+        "maximum": 120
+      },
+      "machineDetection": {
+        "type": "boolean"
+      },
+      "calleeAnnouncement": {
+        "type": "string",
+        "minLength": 1
+      },
+      "humanPrompt": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxAttemptsPerCall": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 5
+      },
+      "pollIntervalMs": {
+        "type": "integer",
+        "minimum": 250,
+        "maximum": 5000
+      }
+    }
+  }
+}
