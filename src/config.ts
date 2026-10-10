@@ -1,7 +1,17 @@
 // Plugin config: plugins.entries.call-handoff.config. Secret fields arrive
 // resolved by OpenClaw (configContracts.secretInputs), so they are strings here.
 
-export type Human = { name: string; number: string; description?: string };
+export type Human = {
+  name: string;
+  number: string;
+  description?: string;
+  /** Language of what this person hears, e.g. "cmn-CN" (Twilio <Say> language). */
+  language?: string;
+  /** Twilio <Say> voice, e.g. "Polly.Zhiyu-Neural". */
+  voice?: string;
+  /** This person's prompt; overrides humanPrompt. Same placeholders. */
+  prompt?: string;
+};
 
 export type CallHandoffConfig = {
   twilio: { accountSid: string; authToken: string; apiBaseUrl: string };
@@ -98,7 +108,14 @@ export function parseConfig(
       errors.push(`humans.${id}: needs a name and an E.164 number`);
       continue;
     }
-    humans[id] = { name, number, ...(str(h.description) ? { description: str(h.description) } : {}) };
+    humans[id] = {
+      name,
+      number,
+      ...(str(h.description) ? { description: str(h.description) } : {}),
+      ...(str(h.language) ? { language: str(h.language) } : {}),
+      ...(str(h.voice) ? { voice: str(h.voice) } : {}),
+      ...(str(h.prompt) ? { prompt: str(h.prompt) } : {}),
+    };
   }
   if (Object.keys(humans).length === 0) errors.push("humans needs at least one entry");
   const defaultHuman = str(input.defaultHuman);

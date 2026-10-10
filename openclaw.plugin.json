@@ -2,7 +2,7 @@
   "id": "call-handoff",
   "name": "Call Hand-off",
   "description": "Hand a live voice call over to a configured human.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "activation": {
     "onStartup": true
   },
@@ -106,6 +106,16 @@
             },
             "description": {
               "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "voice": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string",
+              "minLength": 1
             }
           }
         }

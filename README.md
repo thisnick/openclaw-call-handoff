@@ -36,6 +36,12 @@ plugins: { entries: { "call-handoff": { enabled: true, config: {
   gateway: { url: "ws://127.0.0.1:18789", token: { source: "store", provider: "default", id: "<entry>" } },
   humans: {
     nick: { name: "Nick", number: "+15550001111", description: "the account owner" },
+    mom: {
+      name: "Mom", number: "+15550002222", description: "Nick's mom",
+      // optional per person: what they hear, in their language
+      language: "cmn-CN", voice: "Polly.Zhiyu-Neural",
+      prompt: "{callee}打来的电话，事由：{reason}。正在为您接通。",
+    },
   },
   defaultHuman: "nick",
   // fromNumber, voice-call webhook URLs default from voice-call's config
@@ -49,6 +55,10 @@ hot reload re-registers the plugin without them and it switches itself off
 
 voice-call's `realtime.toolPolicy` must let consults use the tool (`owner`),
 and its `realtime.instructions` should say when to ask for a person.
+
+Per person, `language` and `voice` set the Twilio `<Say>` language and voice of
+what they hear, and `prompt` overrides `humanPrompt`; the tool description tells
+the agent to write the `reason` in that language.
 
 Options: `ringTimeoutSec` (25), `machineDetection` (true),
 `calleeAnnouncement` ("{humanName} is joining now."), `humanPrompt`

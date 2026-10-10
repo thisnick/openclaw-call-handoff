@@ -58,8 +58,15 @@ function conferenceDial(name: string): string {
   return `<Dial><Conference beep="false" startConferenceOnEnter="true" endConferenceOnExit="true" waitUrl="">${escapeXml(name)}</Conference></Dial>`;
 }
 
-export function humanLegTwiml(prompt: string, conference: string): string {
-  return `<Response><Say>${escapeXml(prompt)}</Say>${conferenceDial(conference)}</Response>`;
+export function humanLegTwiml(
+  prompt: string,
+  conference: string,
+  say: { language?: string; voice?: string } = {},
+): string {
+  const attrs =
+    (say.voice ? ` voice="${escapeXml(say.voice)}"` : "") +
+    (say.language ? ` language="${escapeXml(say.language)}"` : "");
+  return `<Response><Say${attrs}>${escapeXml(prompt)}</Say>${conferenceDial(conference)}</Response>`;
 }
 
 export function businessJoinTwiml(announcement: string, conference: string): string {
@@ -95,7 +102,10 @@ export class HandoffController {
 
   private describe(id: string): string {
     const h = this.deps.config.humans[id];
-    return h?.description ? `${id} (${h.name}, ${h.description})` : `${id} (${h?.name ?? id})`;
+    const details = [h?.name ?? id, h?.description, h?.language ? `write reason in ${h.language}` : undefined]
+      .filter(Boolean)
+      .join(", ");
+    return `${id} (${details})`;
   }
 
   /** Text for the tool description: who can be brought in. */
@@ -158,7 +168,7 @@ export class HandoffController {
     }
     const reason = (args.reason?.trim() || "they need to speak with you").slice(0, 200);
     const conference = `oc-handoff-${callId}-${this.deps.makeId?.() ?? Math.random().toString(36).slice(2, 8)}`;
-    const prompt = fillTemplate(config.humanPrompt, {
+    const prompt = fillTemplate(human.prompt ?? config.humanPrompt, {
       callee: phoneForSpeech(business.to),
       reason,
       humanName: human.name,
@@ -169,7 +179,7 @@ export class HandoffController {
       humanCall = await this.deps.twilio.createCall({
         to: human.number,
         from: config.fromNumber,
-        twiml: humanLegTwiml(prompt, conference),
+        twiml: humanLegTwiml(prompt, conference, { language: human.language, voice: human.voice }),
         timeoutSec: config.ringTimeoutSec,
         machineDetection: config.machineDetection,
       });

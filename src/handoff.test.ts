@@ -133,6 +133,33 @@ describe("HandoffController", () => {
     expect(await controller.start({ reason: "again" })).toMatchObject({ ok: false, error: expect.stringContaining("already handed off") });
   });
 
+  it("speaks to each person in their own language and prompt", async () => {
+    const { twilio, controller } = setup({
+      config: {
+        humans: {
+          nick: { name: "Nick", number: "+15550001111" },
+          mom: {
+            name: "Xiaokun Yang",
+            number: "+15550003333",
+            description: "Nick's mom",
+            language: "cmn-CN",
+            voice: "Polly.Zhiyu-Neural",
+            prompt: "{callee}打来的电话，事由：{reason}。正在为您接通。",
+          },
+        },
+      },
+    });
+    twilio.humanScript = [{ status: "no-answer" }];
+    expect(controller.describeHumans()).toContain("mom (Xiaokun Yang, Nick's mom, write reason in cmn-CN)");
+
+    await controller.start({ human: "mom", reason: "确认周五晚上七点半的两人桌" });
+    await controller.settle();
+
+    const twiml = twilio.created[0]?.twiml ?? "";
+    expect(twiml).toContain('<Say voice="Polly.Zhiyu-Neural" language="cmn-CN">');
+    expect(twiml).toContain("打来的电话，事由：确认周五晚上七点半的两人桌。正在为您接通。");
+  });
+
   it("waits for answering-machine detection before joining", async () => {
     const { twilio, controller } = setup();
     twilio.humanScript = [
